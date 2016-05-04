@@ -1,0 +1,8 @@
+name: 'gamekey_server'
+description: Dart thingy
+
+environment:
+  sdk: '>=1.0.0 <2.0.0'
+
+dependencies:
+  start: "^0.2.7"
