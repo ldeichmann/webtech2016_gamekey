@@ -1,5 +1,5 @@
-name: 'gamekey_server'
-description: Dart thingy
+name: 'Gamekey'
+description: Server to save gamestats
 
 environment:
   sdk: '>=1.0.0 <2.0.0'
