@@ -340,7 +340,15 @@ main() async{
             }
 
             try{
-                
+                Map gamestate={
+                    "type"    : 'gamestate',
+                    "gameid"  : gameid,
+                    "userid"  : userid,
+                    "created" : (new DateTime.now()).toString(),
+                    "state"   : state
+                };
+                file.openWrite().write(JSON.encode(memory));
+                request.response.send(JSON.encode(gamestate));
             }
             catch(e){
                 print(e);
