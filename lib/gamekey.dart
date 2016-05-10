@@ -40,19 +40,19 @@ Map get_user_by_name(String name, Map memory){
     for(Map m in memory['users']){
         if(m['name'] == name) return m;
     }
-    print("homo");
+    //print("homo");
 }
 
 Map get_user_by_id(String id, Map memory){
     for(Map m in memory['users']){
-        if(m['id'] == id) return m;
+        if(m['id'].toString() == id.toString()) return m;
     }
-    print("homo");
+   // print("homo");
 }
 
 bool user_exists(String name, Map memory){
     for(Map m in memory['users']){
-        if(m['name']==name) return true;
+        if(m['name'] == name) return true;
     }
     return false;
 }
@@ -91,7 +91,7 @@ main() async{
             String name = request.param('name');
             String pwd = request.param('pwd');
             var mail = request.param('mail');
-            var id = new Random.secure();
+            var id = new Random.secure().nextInt(0xFFFFFFFF);
             //print(name);
             //print(pwd);
             if(!isEmail(mail)){
@@ -123,13 +123,12 @@ main() async{
             if(byname != null && byname!= 'true' && byname != 'false') {
                 request.response.status(HttpStatus.BAD_REQUEST).send("Bad Request: byname parameter must be 'true' or 'false' (if set), was $byname.");
             }
-            if(byname == true){
+            if(byname == 'true'){
                 user = get_user_by_name(id, memory);
             }
-            else {
-                user = get_user_by_name(id, memory);
+            if(byname == 'false') {
+                user = get_user_by_id(id, memory);
             }
-            print(user);
             if(user == null) {
                 request.response.status(HttpStatus.NOT_FOUND).send(
                     "Userer not Found.");
@@ -145,11 +144,11 @@ main() async{
         });
 
         app.put('/user/:id').listen((request){
-            var id       = request.param['id'];
-            var pwd      = request.param['pwd'];
-            var new_name = request.param['name'];
-            var new_mail = request.param['mail'];
-            var new_pwd  = request.param['newpwd'];
+            String id       = request.param('id');
+            String pwd      = request.param('pwd');
+            String new_name = request.param('name');
+            String new_mail = request.param('mail');
+            String new_pwd  = request.param('newpwd');
 
             if(!isEmail(new_mail)){
                 request.response.status(HttpStatus.BAD_REQUEST).send("Bad Request: $new_mail is not a valid email.");
@@ -163,8 +162,7 @@ main() async{
 
             var user = get_game_by_id(id, memory);
 
-            if(pwd != user['pwd']){
-                print("junge");
+            if(user['signature']!= BASE64.encode(UTF8.encode(id + pwd))){
                 request.response.status(HttpStatus.UNAUTHORIZED).send("unauthorized, please provide correct credentials");
                 return null;
             }
