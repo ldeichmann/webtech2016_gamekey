@@ -179,10 +179,6 @@ main() async{
 
             request.response.send('Succes\n$user');
         });
-<<<<<<< HEAD
-        
-        app.post('/game').listen((request){
-=======
 
         app.delete('/user/:id').listen((request){
             var id = request.param('id');
@@ -210,7 +206,6 @@ main() async{
         });
 
        app.post('/game').listen((request){
->>>>>>> 10fc6ffe7e657fee60b4903d1eaa2716a696913d
             String name   = request.param('name');
             var secret = request.param('secret');
             String url    = request.param('url');
@@ -226,7 +221,7 @@ main() async{
             if(!exp.hasMatch(url)){
                 request.response.send("Bad Request: '" + url + "' is not a valid absolute url");
             }
-            if(memory['games'] != null) {
+            if(memory['games'].isEmpty) {
                 for (Map m in memory['games']){
                     if(memory['games'] == name){
                         request.response.send("Bad Request: Game already exist");
@@ -244,15 +239,13 @@ main() async{
             memory['games'].add(game);
             file.openWrite().write(JSON.encode(memory));
             request.response.send(JSON.encode(game));
-<<<<<<< HEAD
-=======
+
         });
 
         app.get('/gamestate/:gameid/:userid').listen((request){
             var gameid = request.param('gameid');
             var userid = request.param('userid');
             var secret = request.param('secred');
->>>>>>> 10fc6ffe7e657fee60b4903d1eaa2716a696913d
         });
     });
 }
