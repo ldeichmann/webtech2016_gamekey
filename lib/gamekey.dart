@@ -76,7 +76,7 @@ main() async{
     };
     Map memory ;
     File file = new File('\gamekey.json');
-    if(!await file.exists()) {
+    if(!await file.exists() || (await file.length() < DB.length)) {
         file.openWrite().write(JSON.encode(DB));
     }
     memory = JSON.decode(await file.readAsString());
@@ -175,13 +175,39 @@ main() async{
         });
         
         app.post('/game').listen((request){
-            String name   = request.param['name'];
-            var secret = request.param['secret'];
-            var url    = request.param['url'];
+            String name   = request.param('name');
+            var secret = request.param('secret');
+            String url    = request.param('url');
+            var id = new Random.secure().nextInt(0xFFFFFFFF);
             if(name == null || name.isEmpty){
                 request.response.send('Game must be given a name');
             }
-            RegExp exp = new RegExp("[http][s]?[:][www.]?[A-Za-z1-9]+[.].*");
+            Uri uri = Uri.parse(url);
+            if(uri == null || url.isEmpty){
+                request.response.send("Bad Request: '" + url + "' is not a valid absolute url");
+            }
+            RegExp exp = new RegExp("http[s]?:.*.[A-Za-z1-9]+[.].*");
+            if(!exp.hasMatch(url)){
+                request.response.send("Bad Request: '" + url + "' is not a valid absolute url");
+            }
+            if(memory['games'] != null) {
+                for (Map m in memory['games']){
+                    if(memory['games'] == name){
+                        request.response.send("Bad Request: Game already exist");
+                    }
+                }
+            }
+            Map game = {
+            "type"      : 'game',
+            "name"      : name,
+            "id"        : id,
+            "url"       : uri,
+            "signature" : BASE64.encode(UTF8.encode(id + secret)),
+            "created"   : (new DateTime.now()).toString()
+            };
+            memory['games'].add(game);
+            file.openWrite().write(JSON.encode(memory));
+            request.response.send(JSON.encode(game));
         });
     });
 }
