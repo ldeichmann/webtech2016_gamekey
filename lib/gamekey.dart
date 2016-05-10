@@ -103,15 +103,16 @@ main() async{
                 return null;
             }
             var user = {
-            "type"    : 'user',
-            "name"       : name,
-            "id"         : id,
-            "created"    : new DateTime.now(),
-            "mail"       : mail,
-            "signature"  : BASE64.encode(UTF8.encode(name + pwd))
+            'type'       : "user",
+            'name'       : request.param('name'),
+            'id'         : id,
+            'created'    : (new DateTime.now()).toString(),
+            'mail'       : mail,
+            'signature'  : BASE64.encode(UTF8.encode(name + pwd))
             };
             memory["users"].add(user);
-            request.response.send('Alles Klar!');
+            file.openWrite().write(JSON.encode(memory));
+            request.response.send(JSON.encode(user));
         });
 
         app.get('/user/:id').listen((request){
@@ -171,6 +172,16 @@ main() async{
             if(new_mail != null)user['mail'] = new_mail;
             if(new_pwd != null)user['signature'] = BASE64.encode(UTF8.encode(new_name + new_pwd));
             user['update'] = new DateTime.now();
+        });
+        
+        app.post('/game').listen((request){
+            String name   = request.param['name'];
+            var secret = request.param['secret'];
+            var url    = request.param['url'];
+            if(name == null || name.isEmpty){
+                request.response.send('Game must be given a name');
+            }
+            RegExp exp = new RegExp("[http][s]?[:][www.]?[A-Za-z1-9]+[.].*");
         });
     });
 }
