@@ -240,6 +240,24 @@ main() async{
             file.openWrite().write(JSON.encode(memory));
             request.response.send(JSON.encode(game));
         });
+        
+        app.get('/game/:id').listen((request){
+            var secret = request.param('secret');
+            var id = request.param('id');
+            var game = get_game_by_id(id,memory);
+            if(game == null){
+                request.response.send("Game not found");
+            }
+            if(BASE64.encode(UTF8.encode(id + secret)).toString() != game['signature']){
+                request.response.send("unauthorized, please provide correct credentials");
+            }
+            for(Map m in memory['gamestate']) {
+                if (m['gameid'].toString() == id.toString()) {
+                    game['users'].add(m['userid']);
+                }
+            }
+            request.response.send(JSON.encode(game));
+        });
 
         app.get('/gamestate/:gameid/:userid').listen((request){
             var gameid = request.param('gameid');
