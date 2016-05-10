@@ -259,6 +259,75 @@ main() async{
                 request.response.status(HttpStatus.UNAUTHORIZED).send("unauthorized, please provide correct credentials");
                 return null;
             }
+            Map states;
+                for(Map m in memory['gamestates']){
+                    if(m['gameid'].toString() == gameid.toString() && m['userid'].toString() == userid.toString()){
+                        states.addAll(m);
+                    }
+                }
+            return states.toString();
+        });
+
+        app.get('/gamestate/:gameid').listen((request) {
+            var gameid = request.param('gameid');
+            var secret = request.param('secret');
+
+            var game = get_game_by_id(gameid, memory);
+
+            if(game == null){
+                request.response.status(HttpStatus.NOT_FOUND).send(
+                    "Game NOT Found.");
+                return null;
+            }
+
+            if(!game['signature'].toString() == (BASE64.encode(UTF8.encode(gameid + secret))).toString()){
+                request.response.status(HttpStatus.UNAUTHORIZED).send("unauthorized, please provide correct credentials");
+                return null;
+            }
+            Map states;
+            for(Map m in memory['gamestates']){
+                if(m['gameid'].toString() == gameid.toString()){
+                    states.addAll(m);
+                }
+            }
+            return states.toString();
+        });
+
+        app.post('/gamestate/:gameid').listen((request) {
+            var gameid = request.param('gameid');
+            var userid = request.param('userid');
+            var secret = request.param('secret');
+            var state  = request.param('state');
+
+            var game   = get_game_by_id(gameid, memory);
+            var user   = get_user_by_id(userid, memory);
+
+            if(user == null || game == null){
+                request.response.status(HttpStatus.NOT_FOUND).send(
+                    "User or game NOT Found.");
+                return null;
+            }
+
+            if(!game['signature'].toString() == (BASE64.encode(UTF8.encode(gameid + secret))).toString()){
+                request.response.status(HttpStatus.UNAUTHORIZED).send("unauthorized, please provide correct credentials");
+                return null;
+            }
+
+            state = JSON.decode(state);
+
+            if(state == null || state.isEmpty){
+                request.response.status(HttpStatus.BAD_REQUEST).send(
+                    "Bad request: state must not be empty, was $state");
+                return null;
+            }
+
+            try{
+                
+            }
+            catch(e){
+                print(e);
+                request.response.status(HttpStatus.BAD_REQUEST).send('Bad request: state must be provided as valid JSON, was $state');
+            }
         });
     });
 }
