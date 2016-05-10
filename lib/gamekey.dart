@@ -135,7 +135,7 @@ main() async{
             }
             if(user == null) {
                 request.response.status(HttpStatus.NOT_FOUND).send(
-                    "Userer not Found.");
+                    "User not Found.");
                 return null;
             }
             if(isAuthentic(user,pwd)){
@@ -239,13 +239,26 @@ main() async{
             memory['games'].add(game);
             file.openWrite().write(JSON.encode(memory));
             request.response.send(JSON.encode(game));
-
         });
 
         app.get('/gamestate/:gameid/:userid').listen((request){
             var gameid = request.param('gameid');
             var userid = request.param('userid');
-            var secret = request.param('secred');
+            var secret = request.param('secret');
+
+            var game = get_game_by_id(gameid, memory);
+            var user = get_user_by_id(userid, memory);
+
+            if(user == null || game == null){
+                request.response.status(HttpStatus.NOT_FOUND).send(
+                    "User or game NOT Found.");
+                return null;
+            }
+
+            if(!game['signature'].toString() == (BASE64.encode(UTF8.encode(gameid + secret))).toString()){
+                request.response.status(HttpStatus.UNAUTHORIZED).send("unauthorized, please provide correct credentials");
+                return null;
+            }
         });
     });
 }
