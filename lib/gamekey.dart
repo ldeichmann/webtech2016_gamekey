@@ -40,14 +40,12 @@ Map get_user_by_name(String name, Map memory){
     for(Map m in memory['users']){
         if(m['name'] == name) return m;
     }
-    //print("homo");
 }
 
 Map get_user_by_id(String id, Map memory){
     for(Map m in memory['users']){
         if(m['id'].toString() == id.toString()) return m;
     }
-   // print("homo");
 }
 
 bool user_exists(String name, Map memory){
@@ -63,6 +61,11 @@ bool isEmail(String em) {
     return regExp.hasMatch(em);
 }
 
+bool isAuthentic(Map user, String pwd){
+    if(user['signature']!= BASE64.encode(UTF8.encode(user['name'] + pwd)))return true;
+    return false;
+}
+
 main() async{
    // Gamekey test = new Gamekey();
 
@@ -76,7 +79,7 @@ main() async{
     };
     Map memory ;
     File file = new File('\gamekey.json');
-    if(!await file.exists()) {
+    if(!await file.exists() || (await file.length() < DB.length)) {
         file.openWrite().write(JSON.encode(DB));
     }
     memory = JSON.decode(await file.readAsString());
@@ -135,7 +138,7 @@ main() async{
                     "Userer not Found.");
                 return null;
             }
-            if(user['signature']!= BASE64.encode(UTF8.encode(id + pwd))){
+            if(isAuthentic(user,pwd)){
                 request.response.status(HttpStatus.UNAUTHORIZED).send("unauthorized, please provide correct credentials");
                 return null;
             }
@@ -161,9 +164,9 @@ main() async{
                 return null;
             }
 
-            var user = get_game_by_id(id, memory);
+            var user = get_user_by_id(id, memory);
 
-            if(user['signature']!= BASE64.encode(UTF8.encode(id + pwd))){
+            if(isAuthentic(user,pwd)){
                 request.response.status(HttpStatus.UNAUTHORIZED).send("unauthorized, please provide correct credentials");
                 return null;
             }
@@ -171,17 +174,51 @@ main() async{
             if(new_name != null)user['name'] = new_name;
             if(new_mail != null)user['mail'] = new_mail;
             if(new_pwd != null)user['signature'] = BASE64.encode(UTF8.encode(new_name + new_pwd));
-            user['update'] = new DateTime.now();
+            user['update'] = new DateTime.now().toString();
+            file.openWrite().write(JSON.encode(memory));
+
+            request.response.send('Succes\n$user');
         });
-        
+
+        app.delete('/user/:id').listen((request){
+            var id = request.param('id');
+            var pwd = request.param('pwd');
+
+            var user = get_user_by_id(id, memory);
+
+            if(user == null) {
+                request.response.status(HttpStatus.NOT_FOUND).send(
+                    "Userer not Found.");
+                return null;
+            }
+
+            if(isAuthentic(user,pwd)){
+                request.response.status(HttpStatus.UNAUTHORIZED).send("unauthorized, please provide correct credentials");
+                return null;
+            }
+
+            if(memory['users'].remove(user)==null){
+                request.response.send('Failed\n$user');
+            }
+            file.openWrite().write(JSON.encode(memory));
+
+            request.response.send('Succes\n$user');
+        });
+
         app.post('/game').listen((request){
-            String name   = request.param['name'];
-            var secret = request.param['secret'];
-            var url    = request.param['url'];
+            String name   = request.param('name');
+            var secret = request.param('secret');
+            var url    = request.param('url');
             if(name == null || name.isEmpty){
                 request.response.send('Game must be given a name');
             }
             RegExp exp = new RegExp("[http][s]?[:][www.]?[A-Za-z1-9]+[.].*");
+        });
+
+        app.get('/gamestate/:gameid/:userid').listen((request){
+            var gameid = request.param('gameid');
+            var userid = request.param('userid');
+            var secret = request.param('secred');
         });
     });
 }
