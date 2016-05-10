@@ -139,7 +139,7 @@ main() async{
                 return null;
             }
             user['games'] = memory['gamestates'];
- 
+
             request.response.send(user.toString());
         });
 
