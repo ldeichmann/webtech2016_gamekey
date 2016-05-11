@@ -212,6 +212,10 @@ main() async{
             request.response.send('Succes\n$user');
         });
 
+        app.get('/games').listen((request){
+            request.response.send(JSON.encode(memory['games']));
+        });
+
        app.post('/game').listen((request){
             String name   = request.param('name');
             var secret = request.param('secret');
@@ -239,7 +243,7 @@ main() async{
             "type"      : 'game',
             "name"      : name,
             "id"        : id,
-            "url"       : uri,
+            "url"       : uri.toString(),
             "signature" : BASE64.encode(UTF8.encode(id.toString() + secret.toString())),
             "created"   : (new DateTime.now()).toString()
             };
