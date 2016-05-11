@@ -232,12 +232,11 @@ main() async{
             if(!exp.hasMatch(url)){
                 request.response.send("Bad Request: '" + url + "' is not a valid absolute url");
             }
-            if(memory['games'].isEmpty) {
-                for (Map m in memory['games']){
-                    if(memory['games'] == name){
-                        request.response.send("Bad Request: Game already exist");
+            if(!memory['games'].isEmpty) {
+                    if(game_exists(name,memory)){
+                        request.response.status(HttpStatus.BAD_REQUEST).send(
+                            "Game Already exists");
                     }
-                }
             }
             Map game = {
             "type"      : 'game',
