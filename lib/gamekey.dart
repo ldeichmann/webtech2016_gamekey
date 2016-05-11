@@ -31,7 +31,7 @@ class Gamekey{
 
 Map get_game_by_id(String id, Map memory) {
     for(Map m in memory['games']){
-        if(m['id']==id) return m;
+        if(m['id'].toString()==id.toString()) return m;
     }
     return null;
 }
@@ -312,7 +312,7 @@ main() async{
                 return null;
             }
 
-            if(memory['users'].remove(game)==null){
+            if(memory['games'].remove(game)==null){
                 request.response.send('Failed\n$game');
             }
             file.openWrite().write(JSON.encode(memory));
@@ -334,7 +334,7 @@ main() async{
                 return null;
             }
 
-            if(game['signature'].toString() != (BASE64.encode(UTF8.encode(gameid + secret))).toString()){
+            if(game['signature'] != BASE64.encode(UTF8.encode(gameid + secret)).toString()){
                 request.response.status(HttpStatus.UNAUTHORIZED).send("unauthorized, please provide correct credentials");
                 return null;
             }
@@ -387,14 +387,14 @@ main() async{
                 return null;
             }
 
-            if(!game['signature'].toString() == (BASE64.encode(UTF8.encode(gameid + secret))).toString()){
+            if(game['signature'].toString() != (BASE64.encode(UTF8.encode(gameid + secret))).toString()){
                 request.response.status(HttpStatus.UNAUTHORIZED).send("unauthorized, please provide correct credentials");
                 return null;
             }
 
             state = JSON.decode(state);
 
-            if(state == null || state.isEmpty){
+            if(state == null || state.toString().isEmpty){
                 request.response.status(HttpStatus.BAD_REQUEST).send(
                     "Bad request: state must not be empty, was $state");
                 return null;
