@@ -233,7 +233,7 @@ main() async{
             "name"      : name,
             "id"        : id,
             "url"       : uri,
-            "signature" : BASE64.encode(UTF8.encode(id + secret)),
+            "signature" : BASE64.encode(UTF8.encode(id.toString() + secret.toString())),
             "created"   : (new DateTime.now()).toString()
             };
             memory['games'].add(game);
@@ -249,7 +249,7 @@ main() async{
                 request.response.send("Game not found");
             }
             if(BASE64.encode(UTF8.encode(id + secret)).toString() != game['signature']){
-                request.response.send("unauthorized, please provide correct credentials");
+                request.response.status(HttpStatus.UNAUTHORIZED).send("unauthorized, please provide correct credentials");
             }
             for(Map m in memory['gamestate']) {
                 if (m['gameid'].toString() == id.toString()) {
@@ -257,6 +257,29 @@ main() async{
                 }
             }
             request.response.send(JSON.encode(game));
+        });
+
+        app.delete('/game/:id').listen((request){
+            var id = request.param('id');
+            var secret = request.param('secret');
+
+            var game = get_game_by_id(id, memory);
+
+            if(game == null){
+                request.response.send("Game not found");
+                return null;
+            }
+            if(BASE64.encode(UTF8.encode(id + secret)).toString() != game['signature']){
+                request.response.status(HttpStatus.UNAUTHORIZED).send("unauthorized, please provide correct credentials");
+                return null;
+            }
+
+            if(memory['users'].remove(game)==null){
+                request.response.send('Failed\n$game');
+            }
+            file.openWrite().write(JSON.encode(memory));
+
+            request.response.send('Succes\n$game');
         });
 
         app.get('/gamestate/:gameid/:userid').listen((request){
@@ -273,7 +296,7 @@ main() async{
                 return null;
             }
 
-            if(!game['signature'].toString() == (BASE64.encode(UTF8.encode(gameid + secret))).toString()){
+            if(game['signature'].toString() != (BASE64.encode(UTF8.encode(gameid + secret))).toString()){
                 request.response.status(HttpStatus.UNAUTHORIZED).send("unauthorized, please provide correct credentials");
                 return null;
             }
