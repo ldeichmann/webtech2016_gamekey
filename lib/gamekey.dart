@@ -36,6 +36,13 @@ Map get_game_by_id(String id, Map memory) {
     return null;
 }
 
+bool game_exists(String name, Map memory){
+    for(Map m in memory['games']){
+        if(m['name'] == name) return true;
+    }
+    return false;
+}
+
 Map get_user_by_name(String name, Map memory){
     for(Map m in memory['users']){
         if(m['name'] == name) return m;
@@ -257,6 +264,34 @@ main() async{
                 }
             }
             request.response.send(JSON.encode(game));
+        });
+
+         app.put('/game/:id').listen((request){
+            var id         = request.param('id');
+            var secret     = request.param('secret');
+            var new_name   = request.param('name');
+            var new_url    = request.param('url');
+            var new_secret = request.param('newsecret');
+            Uri uri = Uri.parse(new_url);
+            var game = get_game_by_id(id,memory);
+            RegExp exp = new RegExp("http[s]?:.*.[A-Za-z1-9]+[.].*");
+            if(!exp.hasMatch(new_url)){
+                request.response.send("Bad Request: '" + new_url + "' is not a valid absolute url");
+            }
+            if(new_name != null){
+                if(game_exists(new_name,memory)){
+                    request.response.status(HttpStatus.BAD_REQUEST).send(
+                        "Game Already exists");
+                }
+            }
+            if(BASE64.encode(UTF8.encode(id + secret)).toString() != game['signature'].toString()){
+                request.response.status(HttpStatus.UNAUTHORIZED).send("unauthorized, please provide correct credentials");
+            }
+            if(new_name != null)game['name'] = new_name;
+            if(new_url != null)game['url'] = new_url;
+            if(new_secret != null)game['signature'] = BASE64.encode(UTF8.encode(new_name + new_secret));
+            game['update'] = new DateTime.now().toString();
+            file.openWrite().write(JSON.encode(memory));
         });
 
         app.delete('/game/:id').listen((request){
