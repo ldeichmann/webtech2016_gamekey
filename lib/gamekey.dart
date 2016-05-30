@@ -72,16 +72,16 @@ bool isEmail(String em) {
     String p = r'^(([^<>()[\]\\.,;:\s@\"]+(\.[^<>()[\]\\.,;:\s@\"]+)*)|(\".+\"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$';
     RegExp regExp = new RegExp(p);
     return regExp.hasMatch(em);
-}
-
-bool isUrl(String url){
-    String exp = '#\b(([\w-]+://?|www[.])[^\s()<>]+(?:\([\w\d]+\)|([^[:punct:]\s]|/)))#iS';
-    RegExp regExp = new RegExp(exp);
-    return regExp.hasMatch(url);
     //return true;
 }
 
-bool isAuthentic(Map user, String pwd){
+bool isUrl(String url){
+    String exp = r'(https?:\/\/)';
+    RegExp regExp = new RegExp(exp);
+    return regExp.hasMatch(url);
+}
+
+bool isNotAuthentic(Map user, String pwd){
     if(user['signature']!= BASE64.encode((sha256.convert(UTF8.encode(user["id"].toString() + ',' + pwd))).bytes))return true;
     return false;
 }
@@ -111,6 +111,7 @@ main() async{
 
         app.post('/user').listen((request) async{
             //Control if payload can be used is missing
+            print("Bin in Post user");
             var map = await request.payload();
             String name = map["name"];
             String pwd = map["pwd"];
@@ -136,12 +137,16 @@ main() async{
             'mail'       : (mail != null)?mail:'',
             'signature'  : BASE64.encode(test.bytes)
             };
-            memory["users"].add(user);
+            try{
+            memory["users"].add(user);} catch(e){
+                print("USER DU NUTTE!");
+            }
             file.openWrite().write(JSON.encode(memory));
             request.response.send(JSON.encode(user));
         });
 
         app.get('/user/:id').listen((request) async{
+            print("Bin in get user by id");
             Request req = await request;
             var id = req.param("id");
             var pwd = req.param("pwd");
@@ -149,13 +154,13 @@ main() async{
             //var pwd = "";
             //var byname = "";
             //print("hier du nutte");
-            print(req.input.headers.contentLength);
+            //print(req.input.headers.contentLength);
             if(req.input.headers.contentLength != -1){
                 var map = await req.payload();
                 if(pwd.isEmpty)pwd = map["pwd"]==null?"":map["pwd"];
                 if(byname.isEmpty)byname = map["byname"]==null?"":map["byname"];
             }
-            print("ID:" + id + " PWD:" + pwd + " byname:" + byname);
+            //print("ID:" + id + " PWD:" + pwd + " byname:" + byname);
             //    String pwd = map["pwd"];
             //String id = map["id"];
             //String byname = map["byname"];
@@ -189,7 +194,7 @@ main() async{
             if(pwd == null){
                 pwd = "";
             }
-            if(isAuthentic(user,pwd)){
+            if(isNotAuthentic(user,pwd)){
                 //print("unauthorized");
                 request.response.status(HttpStatus.UNAUTHORIZED).send("unauthorized, please provide correct credentials");
                 return null;
@@ -209,6 +214,7 @@ main() async{
         });
 
         app.put('/user/:id').listen((request) async{
+            print("Bin in put user");
             /* String id       = request.param('id');
             String pwd      = request.param('pwd');
             String new_name = request.param('name');
@@ -221,7 +227,7 @@ main() async{
             String new_name = map["name"]==null?"":map["name"];
             String new_mail = map["mail"]==null?"":map["mail"];
             String new_pwd  = map["newpwd"]==null?"":map["newpwd"];
-            print("ID:" + id + "PWD:" + pwd + "Name:" + new_name + "Mail:" + new_mail + "newPWD:" + new_pwd);
+            //print("ID:" + id + "PWD:" + pwd + "Name:" + new_name + "Mail:" + new_mail + "newPWD:" + new_pwd);
             if(!isEmail(new_mail) && !new_mail.isEmpty){
                 request.response.status(HttpStatus.BAD_REQUEST).send("Bad Request: $new_mail is not a valid email.");
                 return null;
@@ -234,7 +240,7 @@ main() async{
 
             var user = get_user_by_id(id, memory);
 
-            if(isAuthentic(user,pwd)){
+            if(isNotAuthentic(user,pwd)){
                 request.response.status(HttpStatus.UNAUTHORIZED).send("unauthorized, please provide correct credentials");
                 return null;
             }
@@ -246,11 +252,12 @@ main() async{
             file.openWrite().write(JSON.encode(memory));
 
             //request.response.send('Succes\n$user');
-            print(JSON.encode(user));
+            //print(JSON.encode(user));
             request.response.status(HttpStatus.OK).send(JSON.encode(user));
         });
 
         app.delete('/user/:id').listen((request) async{
+            print("Bin in delete user");
             var id = request.param('id');
             var pwd = request.param('pwd');
             if(request.input.headers.contentLength != -1) {
@@ -262,17 +269,21 @@ main() async{
 
             if(user == null) {
                 request.response.status(HttpStatus.OK).send(
-                    "Userer not Found.");
+                    "User not found.");
                 return null;
             }
 
-            if(isAuthentic(user,pwd)){
+            if(isNotAuthentic(user,pwd)){
                 request.response.status(HttpStatus.UNAUTHORIZED).send("unauthorized, please provide correct credentials");
                 return null;
             }
-
             if(memory['users'].remove(user)==null){
                 request.response.send('Failed\n$user');
+            }
+            for(Map m in memory['gamestates']){
+                if(m['userid'] == user["id"]){
+                    memory['gamestates'].remove(m);
+                }
             }
             file.openWrite().write(JSON.encode(memory));
 
@@ -284,6 +295,7 @@ main() async{
         });
 
        app.post('/game').listen((request) async{
+           print("Bin in Post game");
             String name   = request.param('name');
             var secret = request.param('secret');
             String url    = request.param('url');
@@ -325,12 +337,14 @@ main() async{
             "signature" : BASE64.encode((sha256.convert(UTF8.encode(id.toString() + ',' + secret.toString()))).bytes),
             "created"   : new DateTime.now().toIso8601String()
             };
-            memory['games'].add(game);
+            try{
+            memory['games'].add(game);} catch(e){print("games du nutte");}
             file.openWrite().write(JSON.encode(memory));
             request.response.send(JSON.encode(game));
         });
         
         app.get('/game/:id').listen((request) async{
+            print("Bin in get game");
             var secret = request.param('secret');
             var id = request.param('id');
             if(request.input.headers.contentLength != -1) {
@@ -361,6 +375,7 @@ main() async{
         });
 
          app.put('/game/:id').listen((request) async{
+             print("Bin in put game");
             var id         = request.param('id');
             var secret     = request.param('secret');
             var new_name   = request.param('name');
@@ -373,15 +388,22 @@ main() async{
                 if(new_url.isEmpty)new_url = map["url"] == null ? "" : map["url"];
                 if(new_secret.isEmpty)new_secret = map["newsecret"] == null ? "" : map["newsecret"];
             }
+
             Uri uri = Uri.parse(new_url);
             var game = get_game_by_id(id,memory);
-            print(new_url.isEmpty);
-            if(!new_url.isEmpty && (!isUrl(new_url) || !uri.isAbsolute)){
+            //print("ID:" + id + " Secret:" + secret + " NewName:" + new_name + " NewUrl:" + new_url + " NewSecret:" + new_secret);
+            //print("Url:$new_url");
+            //print("Url !empty ?:" + (!new_url.isEmpty).toString());
+            //print("Url is Url ?:" + (!isUrl(new_url)).toString());
+            //print("Url is uri?:" + (!uri.isAbsolute).toString());
+            if(!new_url.isEmpty && (!isUrl(new_url))){
                 request.response.status(HttpStatus.BAD_REQUEST).send("Bad Request: '" + new_url + "' is not a valid absolute url");
                 return null;
             }
+
             if(new_name != null){
                 if(game_exists(new_name,memory)){
+                    print("Jo is here");
                     request.response.status(HttpStatus.BAD_REQUEST).send(
                         "Game Already exists");
                     return null;
@@ -393,23 +415,28 @@ main() async{
             }
             if(new_name != null)game['name'] = new_name;
             if(new_url != null)game['url'] = new_url;
-            if(new_secret != null)game['signature'] = BASE64.encode(UTF8.encode(new_name + new_secret));
+            if(new_secret != null)game['signature'] = BASE64.encode((sha256.convert(UTF8.encode(id.toString() + ',' + new_secret.toString()))).bytes);
             game['update'] = new DateTime.now().toString();
             file.openWrite().write(JSON.encode(memory));
              request.response.status(HttpStatus.OK).send(JSON.encode(game));
         });
 
-        app.delete('/game/:id').listen((request){
-            var id = request.param('id');
-            var secret = request.param('secret');
+        app.delete('/game/:id').listen((request) async{
+            print("Bin in delete game");
+            var id         = request.param('id');
+            var secret     = request.param('secret');
+            if(request.input.headers.contentLength != -1) {
+                var map = await request.payload();
+                if(secret.isEmpty)secret = map["secret"] == null ? "" : map["secret"];
+            }
 
             var game = get_game_by_id(id, memory);
 
             if(game == null){
-                request.response.send("Game not found");
+                request.response.status(HttpStatus.OK).send("Game not found");
                 return null;
             }
-            if(BASE64.encode(UTF8.encode(id + secret)).toString() != game['signature']){
+            if(BASE64.encode((sha256.convert(UTF8.encode(id.toString() + ',' + secret.toString()))).bytes) != game['signature']){
                 request.response.status(HttpStatus.UNAUTHORIZED).send("unauthorized, please provide correct credentials");
                 return null;
             }
@@ -417,18 +444,29 @@ main() async{
             if(memory['games'].remove(game)==null){
                 request.response.send('Failed\n$game');
             }
+            for(Map m in memory['gamestates']){
+                if(m['gameid'] == game["id"]){
+                    memory['gamestates'].remove(m);
+                }
+            }
             file.openWrite().write(JSON.encode(memory));
 
             request.response.send('Succes\n$game');
         });
 
-        app.get('/gamestate/:gameid/:userid').listen((request){
+        app.get('/gamestate/:gameid/:userid').listen((request) async{
+            print("Bin in get gamestate/userid");
             var gameid = request.param('gameid');
             var userid = request.param('userid');
             var secret = request.param('secret');
+            if(request.input.headers.contentLength != -1) {
+                var map = await request.payload();
+                if(secret.isEmpty)secret = map["secret"] == null ? "" : map["secret"];
+            }
 
             var game = get_game_by_id(gameid, memory);
             var user = get_user_by_id(userid, memory);
+            print("allo");
 
             if(user == null || game == null){
                 request.response.status(HttpStatus.NOT_FOUND).send(
@@ -436,22 +474,30 @@ main() async{
                 return null;
             }
 
-            if(game['signature'] != BASE64.encode(UTF8.encode(gameid + secret)).toString()){
+            if(game['signature'] != BASE64.encode((sha256.convert(UTF8.encode(gameid.toString() + ',' + secret.toString()))).bytes)){
                 request.response.status(HttpStatus.UNAUTHORIZED).send("unauthorized, please provide correct credentials");
                 return null;
             }
-            Map states;
-                for(Map m in memory['gamestates']){
-                    if(m['gameid'].toString() == gameid.toString() && m['userid'].toString() == userid.toString()){
-                        states.addAll(m);
-                    }
-                }
-            return states.toString();
+            var states = new List();
+            for(Map m in memory['gamestates']){
+               if(m['gameid'].toString() == gameid.toString() && m['userid'].toString() == userid.toString()){
+                    var state = new Map.from(m);
+                    state["gamename"] = game["name"];
+                    state["username"] = user["name"];
+                    states.add(state);
+               }
+            }
+            request.response.status(HttpStatus.OK).send(JSON.encode(states));
         });
 
-        app.get('/gamestate/:gameid').listen((request) {
+        app.get('/gamestate/:gameid').listen((request) async{
+            print("Bin in get gamstate/gameid");
             var gameid = request.param('gameid');
             var secret = request.param('secret');
+            if(request.input.headers.contentLength != -1) {
+                var map = await request.payload();
+                if(secret.isEmpty)secret = map["secret"] == null ? "" : map["secret"];
+            }
 
             var game = get_game_by_id(gameid, memory);
 
@@ -461,27 +507,36 @@ main() async{
                 return null;
             }
 
-            if(!game['signature'].toString() == (BASE64.encode(UTF8.encode(gameid + secret))).toString()){
+            if(!game['signature'].toString() == BASE64.encode((sha256.convert(UTF8.encode(gameid.toString() + ',' + secret.toString()))).bytes)){
                 request.response.status(HttpStatus.UNAUTHORIZED).send("unauthorized, please provide correct credentials");
                 return null;
             }
-            Map states;
+            var states = new List();
             for(Map m in memory['gamestates']){
                 if(m['gameid'].toString() == gameid.toString()){
-                    states.addAll(m);
+                    states.add(m);
                 }
             }
             return states.toString();
         });
 
-        app.post('/gamestate/:gameid').listen((request) {
+        app.post('/gamestate/:gameid/:userid').listen((request) async{
+            print("Bin in post gamestate");
             var gameid = request.param('gameid');
             var userid = request.param('userid');
             var secret = request.param('secret');
             var state  = request.param('state');
-
+            if(request.input.headers.contentLength != -1) {
+                var map = await request.payload();
+                //if(userid.isEmpty)userid = map["userid"] == null ? "" : map["userid"];
+                if(secret.isEmpty)secret = map["secret"] == null ? "" : map["secret"];
+                if(state.isEmpty)state = map["state"] == null ? "" : map["state"];
+            }
+            print("Gameid:" + gameid + " Userid:" + userid + " Secret:" + secret + " state:" + state);
             var game   = get_game_by_id(gameid, memory);
             var user   = get_user_by_id(userid, memory);
+            print(game);
+            print(user);
 
             if(user == null || game == null){
                 request.response.status(HttpStatus.NOT_FOUND).send(
@@ -489,10 +544,12 @@ main() async{
                 return null;
             }
 
-            if(game['signature'].toString() != (BASE64.encode(UTF8.encode(gameid + secret))).toString()){
+            if(game['signature'].toString() != BASE64.encode((sha256.convert(UTF8.encode(gameid.toString() + ',' + secret.toString()))).bytes)){
                 request.response.status(HttpStatus.UNAUTHORIZED).send("unauthorized, please provide correct credentials");
                 return null;
             }
+
+            try{
 
             state = JSON.decode(state);
 
@@ -502,18 +559,18 @@ main() async{
                 return null;
             }
 
-            try{
-                Map gamestate={
-                    "type"    : 'gamestate',
-                    "gameid"  : gameid,
-                    "userid"  : userid,
-                    "created" : (new DateTime.now()).toString(),
-                    "state"   : state
-                };
-                file.openWrite().write(JSON.encode(memory));
-                request.response.send(JSON.encode(gamestate));
-            }
-            catch(e){
+            var gamestate = {
+                "type"    : 'gamestate',
+                "gameid"  : gameid,
+                "userid"  : userid,
+                "created" : (new DateTime.now().toIso8601String()),
+                "state"   : state
+             };
+             print("state:" + gamestate.toString());
+             memory['gamestates'].add(gamestate);
+             file.openWrite().write(JSON.encode(memory));
+             request.response.send(JSON.encode(gamestate));
+            } on NoSuchMethodError catch(e){
                 print(e);
                 request.response.status(HttpStatus.BAD_REQUEST).send('Bad request: state must be provided as valid JSON, was $state');
             }
