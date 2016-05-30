@@ -200,15 +200,13 @@ main() async{
                 return null;
             }
             user = new Map.from(user);
-            if(memory['gamestate'] != null) {
-                for (Map m in memory['gamestate']) {
-                    if (m['userid'].toString() == id.toString()) {
+            user['games'] = new List();
+            if(memory['gamestates'] != null) {
+                for (Map m in memory['gamestates']) {
+                    if (m['userid'].toString() == user["id"].toString()) {
                         user['games'].add(m['gameid']);
                     }
                 }
-            }
-            else{
-                user['games'] = new List();
             }
             request.response.status(HttpStatus.OK).send(JSON.encode(user));
         });
@@ -280,11 +278,16 @@ main() async{
             if(memory['users'].remove(user)==null){
                 request.response.send('Failed\n$user');
             }
+            /*
             for(Map m in memory['gamestates']){
                 if(m['userid'] == user["id"]){
                     memory['gamestates'].remove(m);
                 }
-            }
+            }*/
+            memory['gamestates'].where((g) => g["userid"].toString() == id.toString()).map((g) {
+                memory['gamestates'].remove(g);
+                print("g: ${g}");
+            });
             file.openWrite().write(JSON.encode(memory));
 
             request.response.send('Succes\n$user');
@@ -361,15 +364,13 @@ main() async{
                 request.response.status(HttpStatus.UNAUTHORIZED).send("unauthorized, please provide correct credentials");
                 return null;
             }
-            if(memory['gamestate'] != null) {
-                for (Map m in memory['gamestate']) {
+            game['users'] = new List();
+            if(memory['gamestates'] != null) {
+                for (Map m in memory['gamestates']) {
                     if (m['gameid'].toString() == id.toString()) {
                         game['users'].add(m['userid']);
                     }
                 }
-            }
-            else{
-                game['users'] = new List();
             }
             request.response.send(JSON.encode(game));
         });
@@ -444,11 +445,17 @@ main() async{
             if(memory['games'].remove(game)==null){
                 request.response.send('Failed\n$game');
             }
+            /*
             for(Map m in memory['gamestates']){
                 if(m['gameid'] == game["id"]){
                     memory['gamestates'].remove(m);
                 }
-            }
+            }*/
+            print("Delete states");
+
+            List<Map> gs = new List<Map>();
+            memory['gamestates'].where((g) => g["gameid"].toString() == id.toString()).forEach((g) => gs.add(g));
+            gs.forEach((g) => memory["gamestates"].remove(g));
             file.openWrite().write(JSON.encode(memory));
 
             request.response.send('Succes\n$game');
@@ -478,7 +485,7 @@ main() async{
                 request.response.status(HttpStatus.UNAUTHORIZED).send("unauthorized, please provide correct credentials");
                 return null;
             }
-            var states = new List();
+            var states = new List<Map>();
             for(Map m in memory['gamestates']){
                if(m['gameid'].toString() == gameid.toString() && m['userid'].toString() == userid.toString()){
                     var state = new Map.from(m);
@@ -487,6 +494,7 @@ main() async{
                     states.add(state);
                }
             }
+            states.sort((m,n) => DateTime.parse(n["created"]).compareTo(DateTime.parse(m["created"])));
             request.response.status(HttpStatus.OK).send(JSON.encode(states));
         });
 
@@ -563,7 +571,7 @@ main() async{
                 "type"    : 'gamestate',
                 "gameid"  : gameid,
                 "userid"  : userid,
-                "created" : (new DateTime.now().toIso8601String()),
+                "created" : (new DateTime.now().toUtc().toIso8601String()),
                 "state"   : state
              };
              print("state:" + gamestate.toString());
