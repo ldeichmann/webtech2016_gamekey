@@ -7,14 +7,14 @@ import 'package:crypto/crypto.dart';
 
 /// Enables Cross origin by editing the response header
 void enableCors(Response response) {
-  response.header("Access-Control-Allow-Origin",
-      "*"
+  response.header('Access-Control-Allow-Origin',
+      '*'
   );
-  response.header("Access-Control-Allow-Methods",
-      "POST, GET, DELETE, PUT, OPTIONS"
+  response.header('Access-Control-Allow-Methods',
+      'POST, GET, DELETE, PUT, OPTIONS'
   );
-  response.header("Access-Control-Allow-Headers",
-      "Origin, Content-Type, Accept, Charset"
+  response.header('Access-Control-Allow-Headers',
+      'Origin, X-Requested-With, Content-Type, Accept, Charset'
   );
 }
 
@@ -116,6 +116,24 @@ main() async {
   start(host: '0.0.0.0', port: 8080).then((Server app) {
     app.static('web');
 
+    app.options('/:a').listen((request) {
+      print("Test0");
+      Response res = request.response;
+      enableCors(res);
+      res.status(HttpStatus.NO_CONTENT).send("");
+    });
+    app.options('/:a/:b').listen((request) {
+      print("Test1");
+      Response res = request.response;
+      enableCors(res);
+      res.status(HttpStatus.NO_CONTENT).send("");
+    });
+    app.options('/:a/:b/:c').listen((request) {
+      print("Test2");
+      Response res = request.response;
+      enableCors(res);
+      res.status(HttpStatus.NO_CONTENT).send("");
+    });
     ///Gets Users
     ///
     /// returns all Users
@@ -603,7 +621,7 @@ main() async {
             "unauthorized, please provide correct credentials");
         return null;
       }
-
+      
       //Lists all states from game and User
       var states = new List<Map>();
       for (Map m in memory['gamestates']) {
@@ -655,7 +673,10 @@ main() async {
       var states = new List();
       for (Map m in memory['gamestates']) {
         if (m['gameid'].toString() == gameid.toString()) {
-          states.add(m);
+          var state = new Map.from(m);
+          state["gamename"] = game["name"];
+          state["username"] = get_user_by_id(m["userid"],memory)["name"];
+          states.add(state);
         }
       }
       res.status(HttpStatus.OK).json(states);
