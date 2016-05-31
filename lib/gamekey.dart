@@ -87,9 +87,9 @@ bool isUrl(String url) {
 ///Authentication
 ///
 /// returns true if Authentication failed or false if Authentic
-bool isNotAuthentic(Map user, String pwd) {
-  if (user['signature'] != BASE64.encode(
-      (sha256.convert(UTF8.encode(user["id"].toString() + ',' + pwd)))
+bool isNotAuthentic(Map map, String pwd) {
+  if (map["signature"] != BASE64.encode(
+      (sha256.convert(UTF8.encode(map["id"].toString() + ',' + pwd.toString())))
           .bytes)) return true;
   return false;
 }
@@ -506,10 +506,8 @@ main() async {
           return null;
         }
       }
-      //Control if is Authentic(has to be replaced with authentic)
-      if (BASE64.encode(
-          (sha256.convert(UTF8.encode(id.toString() + ',' + secret.toString())))
-              .bytes) != game['signature'].toString()) {
+      //Control if is Authentic
+      if (isNotAuthentic(game,secret)) {
         res.status(HttpStatus.UNAUTHORIZED).send(
             "unauthorized, please provide correct credentials");
         return null;
@@ -599,9 +597,8 @@ main() async {
         return null;
       }
 
-      //Control if is Authentic(has to be replaced by Function)
-      if (game['signature'] != BASE64.encode((sha256.convert(
-          UTF8.encode(gameid.toString() + ',' + secret.toString()))).bytes)) {
+      //Control if is Authentic
+      if (isNotAuthentic(game,secret)) {
         res.status(HttpStatus.UNAUTHORIZED).send(
             "unauthorized, please provide correct credentials");
         return null;
@@ -647,9 +644,8 @@ main() async {
         return null;
       }
 
-      //Control if isAuthentic(has to be replaced by Function)
-      if (!game['signature'].toString() == BASE64.encode((sha256.convert(
-          UTF8.encode(gameid.toString() + ',' + secret.toString()))).bytes)) {
+      //Control if isAuthentic
+      if (isNotAuthentic(game,secret)) {
         res.status(HttpStatus.UNAUTHORIZED).send(
             "unauthorized, please provide correct credentials");
         return null;
@@ -694,9 +690,8 @@ main() async {
         return null;
       }
 
-      //Control if isAuthentic(has to be replaced by function)
-      if (game['signature'].toString() != BASE64.encode((sha256.convert(
-          UTF8.encode(gameid.toString() + ',' + secret.toString()))).bytes)) {
+      //Control if isAuthentic
+      if (isNotAuthentic(game,secret)) {
         res.status(HttpStatus.UNAUTHORIZED).send(
             "unauthorized, please provide correct credentials");
         return null;
@@ -726,7 +721,7 @@ main() async {
         memory["gamestates"].add(gamestate);
         file.openWrite().write(JSON.encode(memory));
         res.status(HttpStatus.OK).json(gamestate);
-        
+
       } on NoSuchMethodError catch (e) {
         print(e);
         res.status(HttpStatus.BAD_REQUEST).send(
