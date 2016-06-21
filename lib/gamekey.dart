@@ -466,9 +466,7 @@ main() async {
         return null;
       }
       //Control if Signature matches input(has to be changed to isNotAuthentic)
-      if (BASE64.encode(
-          (sha256.convert(UTF8.encode(id.toString() + ',' + secret.toString())))
-              .bytes) != game['signature']) {
+      if (isNotAuthentic(game, secret)) {
         res.status(HttpStatus.UNAUTHORIZED).send(
             "unauthorized, please provide correct credentials");
         return null;
