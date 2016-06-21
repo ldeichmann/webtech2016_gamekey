@@ -117,19 +117,16 @@ main() async {
     app.static('web');
 
     app.options('/:a').listen((request) {
-      print("Test0");
       Response res = request.response;
       enableCors(res);
       res.status(HttpStatus.NO_CONTENT).send("");
     });
     app.options('/:a/:b').listen((request) {
-      print("Test1");
       Response res = request.response;
       enableCors(res);
       res.status(HttpStatus.NO_CONTENT).send("");
     });
     app.options('/:a/:b/:c').listen((request) {
-      print("Test2");
       Response res = request.response;
       enableCors(res);
       res.status(HttpStatus.NO_CONTENT).send("");
@@ -562,9 +559,7 @@ main() async {
         return null;
       }
       //Control if isAuthentic(should be changed to function)
-      if (BASE64.encode(
-          (sha256.convert(UTF8.encode(id.toString() + ',' + secret.toString())))
-              .bytes) != game['signature']) {
+      if (isNotAuthentic(game,secret)) {
         res.status(HttpStatus.UNAUTHORIZED).send(
             "unauthorized, please provide correct credentials");
         return null;
